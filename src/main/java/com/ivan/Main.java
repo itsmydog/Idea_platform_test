@@ -5,7 +5,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
@@ -16,6 +15,7 @@ public class Main {
         LocalTime timeArrival = null;
         LocalTime timeX = null;
         List<Double> priceList = new ArrayList();
+        Set nameCarrier = new HashSet<>();
         LocalTime timeY = LocalTime.parse("23:59");
         File file = new File("/Users/user/Desktop/test_idea/tickets.json");
         File fileWriter = new File("/Users/user/Desktop/test_idea/tickets.txt");
@@ -23,21 +23,36 @@ public class Main {
                 .registerTypeAdapter(LocalDate.class, new LocalDateTypeAdapter())
                 .registerTypeAdapter(LocalTime.class, new LocalTimeTypeAdapter())
                 .create();
+
+
         BufferedReader reader = new BufferedReader(new FileReader(file));
+        BufferedWriter writer = new BufferedWriter(new FileWriter(fileWriter));
+
         TicketList ticketList = gson.fromJson(reader, TicketList.class);
 
-        // Минимальное время полета между городами Владивосток и Тель-Авив для каждого авиаперевозчика
-        for (NameOfFields name : ticketList.getTickets()) {
-            if (name.getDestination_name().equals("Тель-Авив") && name.getOrigin_name().equals("Владивосток")) {
-                timeDeparture = name.getDeparture_time();
-                timeArrival = name.getArrival_time();
-                timeX = timeArrival.minusHours(timeDeparture.getHour())
-                        .minusMinutes(timeDeparture.getMinute());
-                if (timeX.isBefore(timeY)) {
-                    timeY = timeX;
-                }
-            }
+        // записываем всех перевозчиков
+        for (NameOfFields carrier : ticketList.getTickets()) {
+            nameCarrier.add(carrier.getCarrier());
         }
+
+        // проходимся с нужными фильтрами по файлу
+        for (Object carrierSet : nameCarrier) {
+            for (NameOfFields name : ticketList.getTickets())
+                if (name.getCarrier().equals(carrierSet)
+                        && name.getDestination_name().equals("Тель-Авив")
+                        && name.getOrigin_name().equals("Владивосток")) {
+                    timeDeparture = name.getDeparture_time();
+                    timeArrival = name.getArrival_time();
+                    timeX = timeArrival.minusHours(timeDeparture.getHour())
+                            .minusMinutes(timeDeparture.getMinute());
+                    if (timeX.isBefore(timeY)) {
+                        timeY = timeX;
+                    }
+
+                }
+            writer.write("Перевозчик: " + carrierSet + ", рейс Владивосток : Тель-Авив" + " минимальное время: " + timeY);
+        }
+
 
         // добавляем в массив все цены рейса Владивосток - Тель-Авив
         int count = 0;
@@ -48,17 +63,24 @@ public class Main {
             }
         }
         Collections.sort(priceList);
+
         double priceSume = 0.0;
-        for (Double priceAverage : priceList) {
-            priceSume += priceAverage;
+        for (Double z : priceList) {
+            priceSume += z;
         }
-        double mediana = priceList.get(count / 2);
+        double priceAverage = priceSume / count;
 
-        String answer = "Минимальное время полета между городами Владивосток и Тель-Авив: " + timeY + "\n" +
-                "Разницу между средней ценой и медианой для полета между городами Владивосток и Тель-Авив: " + (priceSume / count - mediana);
+        if (priceList.size() % 2 == 1) {
+            writer.write("Разница между средней ценой и медианой для полета между городами  Владивосток и Тель-Авив "
+                    + (priceAverage - priceList.get(count / 2)));
+        } else {
+            double x = priceList.get(count / 2);
+            double y = priceList.get(count / 2 - 1);
+            writer.write("Разница между средней ценой и медианой для полета между городами  Владивосток и Тель-Авив "
+                    + (priceAverage - (x + y) / 2));
 
-        BufferedWriter writer = new BufferedWriter(new FileWriter(fileWriter, StandardCharsets.UTF_8));
-        writer.write(answer);
+        }
+
 
         writer.close();
         reader.close();
