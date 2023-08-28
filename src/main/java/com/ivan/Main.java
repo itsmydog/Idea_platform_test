@@ -43,7 +43,6 @@ public class Main {
                         && name.getOrigin_name().equals("Владивосток")) {
                     LocalTime timeX = name.getArrival_time().minusHours(name.getDeparture_time().getHour())
                             .minusMinutes(name.getDeparture_time().getMinute());
-                    System.out.println("Перевозчик: " + carrierSet + " " + timeX);
 
 
                     if (timeX.isBefore(timeY)) {
