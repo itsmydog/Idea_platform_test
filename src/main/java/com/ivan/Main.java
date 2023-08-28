@@ -13,10 +13,8 @@ public class Main {
     public static void main(String[] args) throws IOException {
         LocalTime timeDeparture = null;
         LocalTime timeArrival = null;
-        LocalTime timeX = null;
         List<Double> priceList = new ArrayList();
         Set nameCarrier = new HashSet<>();
-        LocalTime timeY = LocalTime.parse("23:59");
         File file = new File("/Users/user/Desktop/test_idea/tickets.json");
         File fileWriter = new File("/Users/user/Desktop/test_idea/tickets.txt");
         Gson gson = new GsonBuilder()
@@ -35,22 +33,26 @@ public class Main {
             nameCarrier.add(carrier.getCarrier());
         }
 
+
         // проходимся с нужными фильтрами по файлу
         for (Object carrierSet : nameCarrier) {
+            LocalTime timeY = LocalTime.parse("23:59");
             for (NameOfFields name : ticketList.getTickets())
                 if (name.getCarrier().equals(carrierSet)
                         && name.getDestination_name().equals("Тель-Авив")
                         && name.getOrigin_name().equals("Владивосток")) {
-                    timeDeparture = name.getDeparture_time();
-                    timeArrival = name.getArrival_time();
-                    timeX = timeArrival.minusHours(timeDeparture.getHour())
-                            .minusMinutes(timeDeparture.getMinute());
+                    LocalTime timeX = name.getArrival_time().minusHours(name.getDeparture_time().getHour())
+                            .minusMinutes(name.getDeparture_time().getMinute());
+                    System.out.println("Перевозчик: " + carrierSet + " " + timeX);
+
+
                     if (timeX.isBefore(timeY)) {
                         timeY = timeX;
                     }
-
                 }
+
             writer.write("Перевозчик: " + carrierSet + ", рейс Владивосток : Тель-Авив" + " минимальное время: " + timeY);
+
         }
 
 
@@ -63,6 +65,7 @@ public class Main {
             }
         }
         Collections.sort(priceList);
+
 
         double priceSume = 0.0;
         for (Double z : priceList) {
@@ -86,5 +89,7 @@ public class Main {
         reader.close();
     }
 
-
 }
+
+
+
